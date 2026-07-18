@@ -4,12 +4,6 @@ A web application to manage student grades using **List ADT** with a **React GUI
 
 ---
 
-## Live Demo
-
-**[Deploy on Netlify](#deploy-on-netlify)** — just push and it works!
-
----
-
 ## Tech Stack
 
 | Layer | Technology |
