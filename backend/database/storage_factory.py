@@ -2,7 +2,7 @@
 Storage Factory Module
 =======================
 Factory pattern for creating the appropriate storage backend.
-Automatically selects MySQL if available, falls back to JSON file storage.
+Uses JSON file storage by default, with MySQL available when requested.
 
 
 create_storage(storage_type, config):
@@ -23,13 +23,13 @@ def create_storage(storage_type=None, config=None):
     """Factory function to create the appropriate storage backend.
 
     Determines which storage to use based on the provided type or the
-    STORAGE_TYPE environment variable. Tries MySQL first if requested,
-    falls back to JSON if MySQL is unavailable.
+    STORAGE_TYPE environment variable. Uses JSON by default. When MySQL is
+    explicitly requested, falls back to JSON if MySQL is unavailable.
 
     Args:
         storage_type (str or None): The storage backend to create.
             Accepted values: 'mysql', 'json', or None (uses env var).
-            If None, reads from STORAGE_TYPE env var, defaults to 'mysql'.
+            If None, reads from STORAGE_TYPE env var, defaults to 'json'.
         config (dict or None): Configuration options for the storage backend.
             For MySQL: host, user, password, database, port.
             For JSON: filepath.
@@ -40,14 +40,16 @@ def create_storage(storage_type=None, config=None):
 
     Example:
         >>> storage = create_storage("json", {"filepath": "data/test.json"})
-        >>> storage = create_storage("mysql")  # uses default config
-        >>> storage = create_storage()  # uses STORAGE_TYPE env var
+        >>> storage = create_storage("mysql")  # explicitly uses MySQL
+        >>> storage = create_storage()  # defaults to JSON
     """
     if config is None:
         config = {}
 
     if storage_type is None:
-        storage_type = os.environ.get("STORAGE_TYPE", STORAGE_TYPE_MYSQL)
+        storage_type = os.environ.get("STORAGE_TYPE", STORAGE_TYPE_JSON)
+
+    storage_type = storage_type.strip().lower()
 
     if storage_type == STORAGE_TYPE_MYSQL:
         try:

@@ -18,7 +18,7 @@ create_app(): Factory function that creates and configures the Flask app.
 
 from flask import Flask, jsonify
 from flask_cors import CORS
-from database.storage_factory import create_storage
+from database.storage_factory import STORAGE_TYPE_JSON, create_storage
 from controllers.student_controller import student_bp
 from views.response import storage_info_view, error_response
 import traceback
@@ -41,8 +41,8 @@ def create_app():
     app = Flask(__name__)
     CORS(app)
 
-    # Determine storage type from environment variable (default: mysql)
-    storage_type = os.environ.get("STORAGE_TYPE", "mysql")
+    # Use JSON by default; MySQL remains available via STORAGE_TYPE=mysql.
+    storage_type = os.environ.get("STORAGE_TYPE", STORAGE_TYPE_JSON).strip().lower()
     storage = create_storage(storage_type)
 
     # Attach storage to app for access in controllers via current_app
