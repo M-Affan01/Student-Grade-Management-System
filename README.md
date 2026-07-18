@@ -1,6 +1,46 @@
 # Student Grade Management System
 
-A web application to manage student grades using **List ADT** with a **React GUI** frontend, **localStorage** for client-side data persistence, and **MVC Architecture**. Deployable on **Netlify** — no backend or database required.
+A console-based and web application to manage student grades using **List ADT** with a **React GUI** frontend, **localStorage** for client-side data persistence, and **MVC Architecture**. Deployable on **Netlify** — no backend or database required.
+
+---
+
+## ADT 1: List - Student Grade Management System
+
+### Mini Project Description
+
+Build a console-based application to manage student grades. The system should allow:
+- Adding a new student with name and grade
+- Removing a student by index or ID
+- Updating a student's grade
+- Displaying all students sorted by grade (ascending/descending)
+- Searching for a student by name
+- Calculating class average, highest, and lowest grade
+
+### Possible Interfaces (API)
+
+| Operation | Method Signature | Description |
+|-----------|-----------------|-------------|
+| Add | `addStudent(name, grade)` | Adds student to the list |
+| Remove | `removeStudent(index)` | Removes student at specified index |
+| Update | `updateGrade(index, newGrade)` | Updates grade at specified index |
+| Get | `getStudent(index)` | Returns student at index |
+| GetAll | `getAllStudents()` | Returns all students |
+| Search | `searchByName(name)` | Returns index of student with given name |
+| Size | `size()` | Returns number of students |
+| Sort | `sortByGrade(ascending)` | Sorts list by grade |
+| Stats | `getAverage()` | Returns average grade |
+
+### Libraries
+
+| Purpose | Library |
+|---------|---------|
+| Core List Implementation | `java.util.ArrayList` (Java) / `list` (Python) |
+| Sorting | `Collections.sort()` (Java) / `sorted()` (Python) |
+| Input Handling | `java.util.Scanner` (Java) / `input()` (Python) |
+
+### Backend Storage
+- In-memory: `ArrayList<Student>` (Java) or `List[Student]` (Python)
+- Persistent (optional): JSON file or SQLite database
 
 ---
 
@@ -394,3 +434,273 @@ All functions include comprehensive **docstrings** with:
 
 ---
 
+## OST: Operational Specification Template (External Dynamic)
+
+**Actor: User (Teacher/Admin)**
+
+### Scenario 1: Add a new student
+
+| Step | Source | Action | Response |
+|------|--------|--------|----------|
+| 1 | User | Selects "Add Student" from menu | Show prompt |
+| 2 | User | Enters student name | Store name |
+| 3 | User | Enters student grade (0-100) | Validate |
+| 4 | System | Adds student to list | Confirm added |
+| 5 | System | Displays updated student list | Show all |
+
+### Scenario 2: Remove a student
+
+| Step | Source | Action | Response |
+|------|--------|--------|----------|
+| 1 | User | Selects "Remove Student" | Show list |
+| 2 | User | Enters index of student to remove | Validate index |
+| 3 | System | Removes student from list | Confirm delete |
+| 4 | System | Displays updated list | Show all |
+
+### Scenario 3: View statistics
+
+| Step | Source | Action | Response |
+|------|--------|--------|----------|
+| 1 | User | Selects "View Statistics" | Calculate |
+| 2 | System | Computes average, max, min | Display stats |
+| 3 | System | Sorts students by grade | Show sorted |
+
+---
+
+## FST: Functional Specification Template (External Static)
+
+### Class: Student
+
+| Attribute | Type |
+|-----------|------|
+| `_name` | String |
+| `_grade` | int |
+
+| Method | Signature | Description |
+|--------|-----------|-------------|
+| Constructor | `Student(name: String, grade: int)` | Initialize student |
+| Getter | `getName(): String` | Get student name |
+| Getter | `getGrade(): int` | Get student grade |
+| Setter | `setGrade(newGrade: int): void` | Update grade |
+| toString | `toString(): String` | String representation |
+
+### Class: StudentManager
+
+| Attribute | Type |
+|-----------|------|
+| `students` | List\<Student\> |
+
+| Method | Signature | Description |
+|--------|-----------|-------------|
+| Constructor | `StudentManager()` | Initialize manager |
+| Add | `addStudent(name: String, grade: int): boolean` | Add student to list |
+| Remove | `removeStudent(index: int): boolean` | Remove student at index |
+| Update | `updateGrade(index: int, newGrade: int): boolean` | Update grade at index |
+| Get | `getStudent(index: int): Student` | Get student at index |
+| GetAll | `getAllStudents(): List<Student>` | Get all students |
+| Search | `searchByName(name: String): int` | Find student by name |
+| Size | `size(): int` | Get student count |
+| Sort | `sortByGrade(ascending: boolean): void` | Sort by grade |
+| Average | `getAverage(): double` | Calculate average |
+| Highest | `getHighestGrade(): int` | Get highest grade |
+| Lowest | `getLowestGrade(): int` | Get lowest grade |
+
+### Class: Main (UI)
+
+| Method | Signature | Description |
+|--------|-----------|-------------|
+| Main | `main(args: String[]): void` | Application entry point |
+| Menu | `displayMenu(): void` | Show menu options |
+| Handler | `handleUserChoice(choice: int): void` | Process user input |
+
+---
+
+## SST: State Specification Template (Internal Dynamic)
+
+### State Machine
+
+```
+                ┌─────────────┐
+                │    Start    │
+                └──────┬──────┘
+                       │ Initialize
+                       ▼
+                ┌─────────────┐
+       ┌───────│    Idle     │───────┐
+       │       │   (Menu)    │       │
+       │       └──────┬──────┘       │
+       │              │               │
+       │ User selects │ User selects  │ User selects
+       │ Add          │ Remove        │ Stats
+       ▼              ▼               ▼
+┌─────────────┐ ┌─────────────┐ ┌─────────────┐
+│   Adding    │ │  Removing   │ │   Viewing   │
+│   Student   │ │  Student    │ │   Stats     │
+└──────┬──────┘ └──────┬──────┘ └──────┬──────┘
+       │               │               │
+       │ Valid input?  │ Valid index?  │ Calculate
+       ▼               ▼               ▼
+┌─────────────┐ ┌─────────────┐ ┌─────────────┐
+│   Student   │ │   Student   │ │    Stats    │
+│   Added     │ │   Removed   │ │  Displayed  │
+└──────┬──────┘ └──────┬──────┘ └──────┬──────┘
+       │               │               │
+       └───────────────┼───────────────┘
+                       ▼
+                ┌─────────────┐
+                │    Idle     │───────────────┐
+                │   (Menu)    │               │
+                └──────┬──────┘               │
+                       │                      │
+                       │ User selects Exit    │
+                       ▼                      │
+                ┌─────────────┐               │
+                │ Terminated  │◄──────────────┘
+                └─────────────┘
+```
+
+### State Transitions
+
+| Current State | Event | Next State | Action |
+|---------------|-------|------------|--------|
+| Idle | Select "Add" | Adding Student | Show prompt |
+| Adding Student | Valid name + grade | Student Added | Add to list |
+| Student Added | Confirmation shown | Idle | Show menu |
+| Idle | Select "Remove" | Removing Student | Show list |
+| Removing Student | Valid index | Student Removed | Delete |
+| Student Removed | Confirmation shown | Idle | Show menu |
+| Idle | Select "View Stats" | Viewing Stats | Calculate |
+| Viewing Stats | Stats displayed | Idle | Show menu |
+| Idle | Select "Exit" | Terminated | End program |
+
+---
+
+## LST: Logic Specification Template (Internal Static)
+
+### Core Logic (Pseudocode)
+
+```
+FUNCTION addStudent(name, grade):
+    IF name IS NULL OR name.trim() == "" THEN
+        PRINT "Error: Name cannot be empty"
+        RETURN false
+    END IF
+
+    IF grade < 0 OR grade > 100 THEN
+        PRINT "Error: Grade must be between 0 and 100"
+        RETURN false
+    END IF
+
+    newStudent = CREATE Student(name, grade)
+    students.add(newStudent)
+    PRINT "Student added successfully"
+    RETURN true
+END FUNCTION
+
+FUNCTION removeStudent(index):
+    IF index < 0 OR index >= students.size() THEN
+        PRINT "Error: Invalid index"
+        RETURN false
+    END IF
+
+    removed = students.remove(index)
+    PRINT "Removed: " + removed.getName()
+    RETURN true
+END FUNCTION
+
+FUNCTION updateGrade(index, newGrade):
+    IF index < 0 OR index >= students.size() THEN
+        PRINT "Error: Invalid index"
+        RETURN false
+    END IF
+
+    IF newGrade < 0 OR newGrade > 100 THEN
+        PRINT "Error: Grade must be between 0 and 100"
+        RETURN false
+    END IF
+
+    students.get(index).setGrade(newGrade)
+    PRINT "Grade updated successfully"
+    RETURN true
+END FUNCTION
+
+FUNCTION getStudent(index):
+    IF index < 0 OR index >= students.size() THEN
+        PRINT "Error: Invalid index"
+        RETURN NULL
+    END IF
+    RETURN students.get(index)
+END FUNCTION
+
+FUNCTION getAllStudents():
+    RETURN students
+END FUNCTION
+
+FUNCTION searchByName(name):
+    FOR i = 0 TO students.size() - 1:
+        IF students.get(i).getName().equals(name) THEN
+            RETURN i
+        END IF
+    END FOR
+    RETURN -1
+END FUNCTION
+
+FUNCTION size():
+    RETURN students.size()
+END FUNCTION
+
+FUNCTION sortByGrade(ascending):
+    IF ascending THEN
+        students.sort(COMPARE BY grade ASCENDING)
+    ELSE
+        students.sort(COMPARE BY grade DESCENDING)
+    END IF
+    PRINT "Students sorted successfully"
+END FUNCTION
+
+FUNCTION getAverage():
+    IF students.isEmpty() THEN
+        RETURN 0
+    END IF
+
+    total = 0
+    FOR each student IN students:
+        total = total + student.getGrade()
+    END FOR
+    RETURN total / students.size()
+END FUNCTION
+
+FUNCTION getHighestGrade():
+    IF students.isEmpty() THEN
+        RETURN 0
+    END IF
+
+    highest = students.get(0).getGrade()
+    FOR each student IN students:
+        IF student.getGrade() > highest THEN
+            highest = student.getGrade()
+        END IF
+    END FOR
+    RETURN highest
+END FUNCTION
+
+FUNCTION getLowestGrade():
+    IF students.isEmpty() THEN
+        RETURN 0
+    END IF
+
+    lowest = students.get(0).getGrade()
+    FOR each student IN students:
+        IF student.getGrade() < lowest THEN
+            lowest = student.getGrade()
+        END IF
+    END FOR
+    RETURN lowest
+END FUNCTION
+```
+
+---
+
+## License
+
+MIT
