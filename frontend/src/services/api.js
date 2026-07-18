@@ -1,189 +1,195 @@
 /**
- * API Service Module
- * ===================
- * Axios-based HTTP client for communicating with the Flask backend.
- * Provides typed service objects for student CRUD operations and
- * storage management.
- *
- * All requests include a 60-second timeout and automatic error
- * interception for connection and timeout issues.
- *
- * @module api
+ * API Service Module (Local Storage)
+ * ====================================
+ * Fully client-side storage using localStorage.
+ * No backend required - works on Netlify or any static host.
  */
 
-import axios from "axios";
+const STORAGE_KEY = "student_grade_management_data";
 
-/** Base URL for all API requests */
-const API_BASE = "http://localhost:5002/api";
+function getStoredData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return { students: [], nextId: 1 };
+}
 
-/**
- * Axios instance configured with base URL, headers, and timeout.
- * @type {import('axios').AxiosInstance}
- */
-const api = axios.create({
-  baseURL: API_BASE,
-  headers: {
-    "Content-Type": "application/json",
-  },
-  timeout: 60000,
-});
+function saveStoredData(data) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
 
-/**
- * Response interceptor for global error handling.
- * Converts timeout errors to user-friendly messages and detects
- * network connectivity issues.
- */
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.code === "ECONNABORTED") {
-      error.message = "Request timed out. Please try again.";
-    } else if (!error.response) {
-      error.message = "Cannot connect to server. Is the backend running?";
-    }
-    return Promise.reject(error);
+function getAllStudents() {
+  return getStoredData().students;
+}
+
+function getNextId() {
+  const data = getStoredData();
+  return data.nextId;
+}
+
+function computeStats(students) {
+  if (!students.length) {
+    return {
+      total_students: 0,
+      average_grade: 0,
+      highest_grade: 0,
+      lowest_grade: 0,
+      passing: 0,
+      failing: 0,
+      grade_a: 0,
+      grade_b: 0,
+      grade_c: 0,
+      grade_d: 0,
+      grade_f: 0,
+    };
   }
-);
+  const grades = students.map((s) => s.grade);
+  const passing = grades.filter((g) => g >= 60).length;
+  return {
+    total_students: students.length,
+    average_grade: Math.round((grades.reduce((a, b) => a + b, 0) / grades.length) * 100) / 100,
+    highest_grade: Math.max(...grades),
+    lowest_grade: Math.min(...grades),
+    passing,
+    failing: students.length - passing,
+    grade_a: grades.filter((g) => g >= 90).length,
+    grade_b: grades.filter((g) => g >= 80 && g < 90).length,
+    grade_c: grades.filter((g) => g >= 70 && g < 80).length,
+    grade_d: grades.filter((g) => g >= 60 && g < 70).length,
+    grade_f: grades.filter((g) => g < 60).length,
+  };
+}
 
-/**
- * Student API Service
- * ====================
- * Provides methods for all student CRUD operations and queries.
- *
- * @namespace studentService
- */
+function wrap(data) {
+  return { data };
+}
+
+function reject(msg) {
+  return Promise.reject({ response: { data: { error: msg } }, message: msg });
+}
+
 export const studentService = {
-  /**
-   * Get all students.
-   * @returns {Promise<AxiosResponse>} Response with array of student objects.
-   */
-  getAll: () => api.get("/students"),
+  getAll: async () => wrap(getAllStudents()),
 
-  /**
-   * Get a single student by their unique ID.
-   * @param {number} id - The student's unique identifier.
-   * @returns {Promise<AxiosResponse>} Response with student object.
-   */
-  getById: (id) => api.get(`/students/${id}`),
+  getById: async (id) => {
+    const student = getAllStudents().find((s) => s.id === id);
+    return student ? wrap(student) : reject("Student not found");
+  },
 
-  /**
-   * Get a student by their list index (0-based).
-   * @param {number} index - Zero-based position in the list.
-   * @returns {Promise<AxiosResponse>} Response with student object.
-   */
-  getByIndex: (index) => api.get(`/students/index/${index}`),
+  getByIndex: async (index) => {
+    const students = getAllStudents();
+    return index >= 0 && index < students.length
+      ? wrap(students[index])
+      : reject("Index out of range");
+  },
 
-  /**
-   * Create a new student.
-   * @param {Object} data - Student data.
-   * @param {string} data.name - Student's full name (required, 2-100 chars).
-   * @param {number} data.grade - Student's grade (required, 0-100).
-   * @param {string} data.email - Student's email (required, valid provider).
-   * @param {string} data.subject - Student's subject (required, 2-100 chars).
-   * @returns {Promise<AxiosResponse>} Response with created student object.
-   */
-  create: (data) => api.post("/students", data),
+  create: async (data) => {
+    if (!data.name || data.grade === undefined || !data.email || !data.subject) {
+      return reject("All fields are required");
+    }
+    const stored = getStoredData();
+    const student = {
+      id: stored.nextId,
+      name: data.name,
+      grade: data.grade,
+      email: data.email,
+      subject: data.subject,
+    };
+    stored.students.push(student);
+    stored.nextId += 1;
+    saveStoredData(stored);
+    return wrap(student);
+  },
 
-  /**
-   * Update an existing student by ID.
-   * @param {number} id - The student's unique identifier.
-   * @param {Object} data - Updated student data (any subset of fields).
-   * @returns {Promise<AxiosResponse>} Response with updated student object.
-   */
-  update: (id, data) => api.put(`/students/${id}`, data),
+  update: async (id, data) => {
+    const stored = getStoredData();
+    const index = stored.students.findIndex((s) => s.id === id);
+    if (index === -1) return reject("Student not found");
+    stored.students[index] = { ...stored.students[index], ...data, id };
+    saveStoredData(stored);
+    return wrap(stored.students[index]);
+  },
 
-  /**
-   * Update only the grade of a student at a given index.
-   * @param {number} index - Zero-based position of the student.
-   * @param {number} grade - New grade value (0-100).
-   * @returns {Promise<AxiosResponse>} Response with updated student object.
-   */
-  updateGrade: (index, grade) => api.put(`/students/index/${index}/grade`, { grade }),
+  updateGrade: async (index, grade) => {
+    const stored = getStoredData();
+    if (index < 0 || index >= stored.students.length) return reject("Index out of range");
+    stored.students[index].grade = grade;
+    saveStoredData(stored);
+    return wrap(stored.students[index]);
+  },
 
-  /**
-   * Delete a student by their unique ID.
-   * @param {number} id - The student's unique identifier.
-   * @returns {Promise<AxiosResponse>} Response with deletion confirmation.
-   */
-  delete: (id) => api.delete(`/students/${id}`),
+  delete: async (id) => {
+    const stored = getStoredData();
+    const index = stored.students.findIndex((s) => s.id === id);
+    if (index === -1) return reject("Student not found");
+    const removed = stored.students.splice(index, 1)[0];
+    saveStoredData(stored);
+    return wrap({ message: "Student deleted successfully", student: removed });
+  },
 
-  /**
-   * Delete a student by their list index.
-   * @param {number} index - Zero-based position of the student.
-   * @returns {Promise<AxiosResponse>} Response with deletion confirmation.
-   */
-  deleteByIndex: (index) => api.delete(`/students/index/${index}`),
+  deleteByIndex: async (index) => {
+    const stored = getStoredData();
+    if (index < 0 || index >= stored.students.length) return reject("Index out of range");
+    const removed = stored.students.splice(index, 1)[0];
+    saveStoredData(stored);
+    return wrap({ message: "Student deleted successfully", student: removed });
+  },
 
-  /**
-   * Search students by name (case-insensitive partial match).
-   * @param {string} name - Search query string.
-   * @returns {Promise<AxiosResponse>} Response with search results.
-   */
-  search: (name) => api.get("/students/search", { params: { name } }),
+  search: async (name) => {
+    const results = getAllStudents().filter((s) =>
+      s.name.toLowerCase().includes(name.toLowerCase())
+    );
+    return wrap(results);
+  },
 
-  /**
-   * Get all students sorted by grade.
-   * @param {boolean} ascending - Sort direction. True = ascending, false = descending.
-   * @returns {Promise<AxiosResponse>} Response with sorted student array.
-   */
-  sortByGrade: (ascending = true) => api.get(`/students/sort`, { params: { ascending } }),
+  sortByGrade: async (ascending = true) => {
+    const sorted = [...getAllStudents()].sort((a, b) =>
+      ascending ? a.grade - b.grade : b.grade - a.grade
+    );
+    return wrap(sorted);
+  },
 
-  /**
-   * Get class statistics (average, highest, lowest, pass/fail counts, grade distribution).
-   * @returns {Promise<AxiosResponse>} Response with statistics object.
-   */
-  getStats: () => api.get("/students/stats"),
+  getStats: async () => wrap(computeStats(getAllStudents())),
 
-  /**
-   * Get the total number of students.
-   * @returns {Promise<AxiosResponse>} Response with { size: number }.
-   */
-  getSize: () => api.get("/students/size"),
+  getSize: async () => wrap({ size: getAllStudents().length }),
 
-  /**
-   * Get the average grade across all students.
-   * @returns {Promise<AxiosResponse>} Response with { average: number }.
-   */
-  getAverage: () => api.get("/students/average"),
+  getAverage: async () => {
+    const students = getAllStudents();
+    const avg = students.length
+      ? Math.round((students.reduce((a, s) => a + s.grade, 0) / students.length) * 100) / 100
+      : 0;
+    return wrap({ average: avg });
+  },
 
-  /**
-   * Get the highest grade among all students.
-   * @returns {Promise<AxiosResponse>} Response with { highest: number }.
-   */
-  getHighest: () => api.get("/students/highest"),
+  getHighest: async () => {
+    const students = getAllStudents();
+    return wrap({ highest: students.length ? Math.max(...students.map((s) => s.grade)) : 0 });
+  },
 
-  /**
-   * Get the lowest grade among all students.
-   * @returns {Promise<AxiosResponse>} Response with { lowest: number }.
-   */
-  getLowest: () => api.get("/students/lowest"),
+  getLowest: async () => {
+    const students = getAllStudents();
+    return wrap({ lowest: students.length ? Math.min(...students.map((s) => s.grade)) : 0 });
+  },
 };
 
-/**
- * Storage API Service
- * ====================
- * Provides methods for storage backend management (save/load/info).
- *
- * @namespace storageService
- */
 export const storageService = {
-  /**
-   * Get information about the active storage backend.
-   * @returns {Promise<AxiosResponse>} Response with storage type, count, and details.
-   */
-  getInfo: () => api.get("/storage/info"),
+  getInfo: async () =>
+    wrap({
+      type: "localStorage",
+      students_count: getAllStudents().length,
+      storage_key: STORAGE_KEY,
+    }),
 
-  /**
-   * Manually save data to the storage backend.
-   * @returns {Promise<AxiosResponse>} Response with save confirmation message.
-   */
-  save: () => api.post("/storage/save"),
+  save: async () => {
+    saveStoredData(getStoredData());
+    return wrap({ message: "Data saved to browser storage" });
+  },
 
-  /**
-   * Manually reload data from the storage backend.
-   * @returns {Promise<AxiosResponse>} Response with load confirmation and count.
-   */
-  load: () => api.post("/storage/load"),
+  load: async () => {
+    const students = getAllStudents();
+    return wrap({ message: "Data loaded from browser storage", count: students.length });
+  },
 };
 
-export default api;
+export default studentService;

@@ -29,8 +29,8 @@ def create_app():
     """Create and configure the Flask application.
 
     Initializes CORS, storage backend, blueprint registration,
-    and error handlers. The storage type defaults to MySQL with
-    JSON fallback.
+    and error handlers. The storage type defaults to JSON, with
+    MySQL available as an optional backend via STORAGE_TYPE env var.
 
     Storage is stored as app.storage for access by controllers
     via current_app.storage.

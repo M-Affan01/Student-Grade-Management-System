@@ -122,7 +122,7 @@ function AppContent() {
             {storageInfo && (
               <div className="storage-badge">
                 <span className="storage-dot"></span>
-                {storageInfo.type === "json" ? "JSON File" : "MySQL"} Storage
+                {storageInfo.type === "localStorage" ? "Browser Storage" : storageInfo.type === "json" ? "JSON File" : "MySQL"} Storage
               </div>
             )}
             <button
