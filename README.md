@@ -104,7 +104,7 @@ Frontend runs on **http://localhost:3000**
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `STORAGE_TYPE` | `mysql` | Storage backend: `mysql` or `json` |
+| `STORAGE_TYPE` | `json` | Storage backend: `json` (default) or `mysql` |
 
 ---
 
@@ -253,24 +253,24 @@ All inputs are checked against these forbidden patterns:
 
 ## Storage Backends
 
-### MySQL (Default)
-- Fresh connection per query (avoids stale connections)
-- Connection pooling with pool size 3
-- 5-second connection timeout
-- Auto-creates database and table on startup
-- SQL aggregation for statistics (efficient)
-
-### JSON File (Fallback)
+### JSON File (Default)
 - Saves to `data/students.json`
 - Auto-saves after every write operation
 - Loads on startup
 - Maintains metadata (count, timestamp, version)
 - Auto-incrementing ID counter
 
+### MySQL (Optional)
+- Fresh connection per query (avoids stale connections)
+- Connection pooling with pool size 3
+- 5-second connection timeout
+- Auto-creates database and table on startup
+- SQL aggregation for statistics (efficient)
+
 ### Storage Factory
-- Auto-selects MySQL if available
-- Falls back to JSON if MySQL is unreachable
-- Configurable via `STORAGE_TYPE` environment variable
+- Selects JSON when no storage type is configured
+- Uses MySQL when `STORAGE_TYPE=mysql` is configured
+- Falls back to JSON if requested MySQL storage is unreachable
 
 ---
 
