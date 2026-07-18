@@ -394,6 +394,3 @@ All functions include comprehensive **docstrings** with:
 
 ---
 
-## License
-
-MIT
