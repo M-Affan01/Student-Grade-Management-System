@@ -701,6 +701,4 @@ END FUNCTION
 
 ---
 
-## License
 
-MIT
